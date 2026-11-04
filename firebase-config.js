@@ -2,7 +2,7 @@
 // (Console do Firebase > Configurações do projeto > Seus apps > Configuração do SDK).
 // Esses valores não são segredo: quem protege os dados são as regras em firestore.rules.
 // Import the functions you need from the SDKs you need
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyCcP8R7BUOzxi7BSvv2yswk-OKFI_iDqZE",
   authDomain: "avaliacao-grupos-e73de.firebaseapp.com",
   projectId: "avaliacao-grupos-e73de",
