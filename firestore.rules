@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // TROQUE pelo e-mail Google que você usará para entrar como professor.
+    function professor() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'tec.joao.freitas@gmail.com';
+    }
+
+    function nota(n) {
+      return n is int && n >= 1 && n <= 5;
+    }
+
+    function texto(t) {
+      return t is string && t.size() <= 600;
+    }
+
+    function avaliacaoValida(codigo, d) {
+      return d.keys().hasOnly(['codigo', 'nome', 'grupo', 'notas', 'total', 'comentarios', 'em'])
+        && d.keys().hasAll(['codigo', 'nome', 'grupo', 'notas', 'total', 'comentarios', 'em'])
+        && d.codigo == codigo
+        && d.nome == get(/databases/$(database)/documents/alunos/$(codigo)).data.nome
+        && d.grupo is string && d.grupo.size() >= 1 && d.grupo.size() <= 60
+        && d.notas.keys().hasOnly(['dominio', 'clareza', 'participacao', 'visuais', 'oral', 'tempo', 'criatividade'])
+        && d.notas.keys().hasAll(['dominio', 'clareza', 'participacao', 'visuais', 'oral', 'tempo', 'criatividade'])
+        && nota(d.notas.dominio) && nota(d.notas.clareza) && nota(d.notas.participacao)
+        && nota(d.notas.visuais) && nota(d.notas.oral) && nota(d.notas.tempo) && nota(d.notas.criatividade)
+        && d.total == d.notas.dominio + d.notas.clareza + d.notas.participacao
+                    + d.notas.visuais + d.notas.oral + d.notas.tempo + d.notas.criatividade
+        && d.comentarios.keys().hasOnly(['forte', 'melhorar', 'pergunta'])
+        && d.comentarios.keys().hasAll(['forte', 'melhorar', 'pergunta'])
+        && texto(d.comentarios.forte) && texto(d.comentarios.melhorar) && texto(d.comentarios.pergunta)
+        && d.em == request.time;
+    }
+
+    // Cadastro dos alunos: o ID (código) é o nome do documento.
+    // Qualquer pessoa só consegue CONSULTAR um código que já sabe; listar a turma é só do professor.
+    match /alunos/{codigo} {
+      allow get: if true;
+      allow list, create, update, delete: if professor();
+
+      // Uma avaliação por aluno e por grupo: o nome do documento é o grupo.
+      // "create" só funciona se o documento ainda não existe, então não há segunda avaliação nem edição.
+      match /avaliacoes/{grupo} {
+        allow get, list: if true;
+        allow create: if grupo.size() >= 1 && grupo.size() <= 80
+                      && avaliacaoValida(codigo, request.resource.data);
+        allow update, delete: if professor();
+      }
+    }
+
+    // Leitura de todas as avaliações (página de resultados do professor).
+    match /{path=**}/avaliacoes/{grupo} {
+      allow read: if professor();
+    }
+  }
+}

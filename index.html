@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Avaliação de Apresentações</title>
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+:root {
+  --bg: #f1f3f4; --surface: #ffffff; --ink: #16212a; --muted: #566672; --line: #d6dde1;
+  --accent: #2347a8; --accent-ink: #ffffff; --accent-soft: #e4eafa;
+  --mark: #ffe27a; --mark-ink: #3b2f00;
+  --ok: #1d7a4b; --ok-soft: #dff3e8; --bad: #b3261e; --bad-soft: #fbe5e3;
+  --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11171c; --surface: #1a222a; --ink: #e7edf1; --muted: #9aa9b4; --line: #2c3842;
+    --accent: #8fb0ff; --accent-ink: #0d1a38; --accent-soft: #1f2c4a;
+    --mark: #e8c44a; --mark-ink: #261d00;
+    --ok: #6fd3a0; --ok-soft: #173326; --bad: #ff9d96; --bad-soft: #3a1e1c;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+  padding-block: calc(20px + env(safe-area-inset-top, 0px)) calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+[hidden] { display: none !important; }
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+h1, h2 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: 1.9rem; line-height: 1.1; }
+h2 { font-size: 1.15rem; }
+p { margin: 0; }
+.eyebrow { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.lede { color: var(--muted); max-width: 60ch; }
+.top { display: flex; flex-direction: column; gap: 8px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+label.lbl { font-weight: 600; font-size: 0.92rem; display: block; margin-bottom: 4px; }
+input[type="text"], textarea, select {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 11px 12px; min-height: 46px;
+}
+textarea { min-height: 78px; resize: vertical; }
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.hint { font-size: 0.85rem; color: var(--muted); }
+.legend { font-size: 0.85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.crit { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.crit:first-child { border-top: 0; padding-top: 0; }
+.crit .name { font-weight: 700; }
+.crit .desc { font-size: 0.88rem; color: var(--muted); }
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.pt { position: relative; display: block; }
+.pt input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.pt span {
+  display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 9px;
+  border: 1.5px solid var(--line); background: var(--bg); font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
+}
+.pt input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pt input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.submitbar { display: flex; flex-direction: column; gap: 10px; }
+.sum { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.sum .chip { background: var(--mark); color: var(--mark-ink); border-radius: 8px; padding: 6px 12px; font-weight: 700; }
+.btn {
+  font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 14px 18px; min-height: 52px; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); width: 100%;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); width: auto; min-height: 44px; padding: 10px 14px; }
+.linklike { background: none; border: 0; padding: 8px 0; font: inherit; color: var(--muted); text-decoration: underline; cursor: pointer; min-height: 40px; }
+.msg { min-height: 1.2em; font-weight: 600; }
+.msg.ok { color: var(--ok); }
+.msg.err { color: var(--bad); }
+.banner { border-radius: 10px; padding: 12px 14px; font-weight: 600; }
+.banner.warn { background: var(--bad-soft); color: var(--bad); }
+.banner.info { background: var(--accent-soft); color: var(--accent); }
+.confirm { background: var(--accent-soft); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.confirm .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.confirm .row .btn { flex: 1; min-width: 140px; }
+.who { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.who b { font-family: var(--font-display); font-size: 1.1rem; overflow-wrap: anywhere; }
+.mine ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.mine li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.mine li:first-child { border-top: 0; }
+.mine .g { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.mine .sc { color: var(--muted); white-space: nowrap; }
+.code-in { font-family: var(--font-display); font-size: 1.5rem; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; }
+.tabs { display: flex; gap: 6px; background: var(--line); padding: 4px; border-radius: 10px; width: fit-content; }
+.tabs button { border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 7px; cursor: pointer; min-height: 40px; }
+.tabs button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+.stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 120px; flex: 1; }
+.stat b { display: block; font-family: var(--font-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.82rem; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.actions select { width: auto; min-width: 170px; }
+.group { gap: 10px; }
+.ghead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ghead h2 { overflow-wrap: anywhere; }
+.nota { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; font-variant-numeric: tabular-nums; background: var(--mark); color: var(--mark-ink); border-radius: 8px; padding: 2px 10px; white-space: nowrap; }
+.gmeta { font-size: 0.85rem; color: var(--muted); }
+.bars { display: flex; flex-direction: column; gap: 6px; }
+.bar { display: grid; grid-template-columns: minmax(0, 11rem) 1fr 2.6rem; gap: 8px; align-items: center; font-size: 0.88rem; }
+.bar .track { height: 10px; background: var(--bg); border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+.bar .fill { height: 100%; background: var(--accent); }
+.bar .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+details summary { cursor: pointer; font-weight: 600; color: var(--accent); min-height: 32px; display: flex; align-items: center; }
+.cm { border-top: 1px solid var(--line); padding: 8px 0; display: flex; flex-direction: column; gap: 3px; font-size: 0.92rem; overflow-wrap: anywhere; }
+.cm .by { font-weight: 700; }
+.cm .k { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.empty { text-align: center; color: var(--muted); padding: 28px 12px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); font-size: 0.92rem; white-space: nowrap; }
+th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-top: 0; }
+td.code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 700; letter-spacing: 0.12em; }
+td.zero { color: var(--bad); font-weight: 700; }
+#cartoes { display: none; }
+@media (max-width: 420px) { .bar { grid-template-columns: minmax(0, 8rem) 1fr 2.4rem; } h1 { font-size: 1.6rem; } }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .3s ease; } }
+@media print {
+  body { background: #fff; color: #000; padding: 0; }
+  .wrap { display: none !important; }
+  #cartoes { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 0; }
+  #cartoes .ct { border: 1px dashed #000; padding: 16px 18px; break-inside: avoid; font-family: var(--font-body); color: #000; }
+  #cartoes .ct .n { font-weight: 700; font-size: 14pt; }
+  #cartoes .ct .c { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; font-size: 24pt; letter-spacing: 0.18em; margin: 6px 0; }
+  #cartoes .ct .u { font-size: 9pt; overflow-wrap: anywhere; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Apresentações dos grupos</p>
+    <h1>Avaliação de apresentações</h1>
+  </header>
+
+  <div id="banner" class="banner warn" hidden></div>
+
+  <!-- Entrada do aluno -->
+  <section id="tela-entrar" class="card" hidden>
+    <h2>Entrar com seu código</h2>
+    <p class="lede">Digite o código que o professor entregou para você. Ele identifica você nas avaliações.</p>
+    <form id="form-entrar" novalidate class="stack">
+      <div>
+        <label class="lbl" for="f-codigo">Seu código</label>
+        <input type="text" id="f-codigo" class="code-in" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123">
+      </div>
+      <button type="submit" class="btn" id="btn-entrar">Entrar</button>
+      <p class="msg" id="msg-entrar" role="status" aria-live="polite"></p>
+    </form>
+    <button type="button" class="linklike" id="link-prof" style="align-self:flex-start">Sou o professor</button>
+  </section>
+
+  <!-- Aluno -->
+  <div id="tela-aluno" class="stack" hidden>
+    <div class="who">
+      <span>Avaliando como <b id="aluno-nome"></b></span>
+      <button type="button" class="linklike" id="btn-sair-aluno">Trocar código</button>
+    </div>
+    <p class="lede">Avalie um grupo por vez, com notas de 1 a 5 em sete critérios. A nota final vai de 0 a 10. Cada grupo só pode ser avaliado uma vez por aluno.</p>
+
+    <form id="form" novalidate class="stack">
+      <section class="card">
+        <h2>Grupo avaliado</h2>
+        <div>
+          <label class="lbl" for="f-grupo">Nome ou número do grupo</label>
+          <input type="text" id="f-grupo" autocomplete="off" maxlength="60" placeholder="Ex.: Grupo 7">
+          <p class="hint" style="margin-top:6px">Escreva do mesmo jeito que o grupo se apresentou. Se tiver número, use só o número.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Critérios</h2>
+        <div class="legend"><span>1 precisa melhorar</span><span>2 regular</span><span>3 bom</span><span>4 muito bom</span><span>5 excelente</span></div>
+        <div id="crit" class="stack" style="gap:12px"></div>
+      </section>
+
+      <section class="card">
+        <h2>Comentários</h2>
+        <div><label class="lbl" for="f-forte">O que o grupo fez de melhor?</label><textarea id="f-forte" maxlength="600"></textarea></div>
+        <div><label class="lbl" for="f-melhorar">O que poderia melhorar?</label><textarea id="f-melhorar" maxlength="600"></textarea></div>
+        <div><label class="lbl" for="f-pergunta">Uma pergunta que você faria ao grupo</label><textarea id="f-pergunta" maxlength="600"></textarea></div>
+      </section>
+
+      <div class="submitbar">
+        <div class="sum"><span>Total <b id="sum">0</b> de 35</span><span class="chip">Nota <span id="nota">–</span></span></div>
+        <button type="submit" class="btn" id="send">Enviar avaliação</button>
+        <div class="confirm" id="confirm" hidden>
+          <p id="confirm-text"></p>
+          <div class="row">
+            <button type="button" class="btn" id="confirm-ok">Confirmar envio</button>
+            <button type="button" class="btn ghost" id="confirm-back" style="flex:1">Voltar e revisar</button>
+          </div>
+        </div>
+        <p class="msg" id="msg" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+
+    <section class="card mine" id="mine" hidden>
+      <h2>Avaliações que você já enviou</h2>
+      <ul id="minelist"></ul>
+    </section>
+  </div>
+
+  <!-- Professor -->
+  <div id="tela-prof" class="stack" hidden>
+    <div class="who">
+      <span>Área do professor <b id="prof-email"></b></span>
+      <span class="actions">
+        <button type="button" class="linklike" id="btn-sair-prof">Sair</button>
+        <button type="button" class="linklike" id="btn-voltar-aluno">Voltar à ficha</button>
+      </span>
+    </div>
+
+    <section id="prof-login" class="card" hidden>
+      <h2>Entrar como professor</h2>
+      <p class="lede">Entre com a conta Google cadastrada em <code>firestore.rules</code>.</p>
+      <button type="button" class="btn" id="btn-google">Entrar com Google</button>
+      <p class="msg" id="msg-login" role="status" aria-live="polite"></p>
+    </section>
+
+    <div id="prof-conteudo" class="stack" hidden>
+      <nav class="tabs" aria-label="Seções do professor">
+        <button type="button" id="tab-res" aria-pressed="true">Resultados</button>
+        <button type="button" id="tab-alunos" aria-pressed="false">Alunos e códigos</button>
+      </nav>
+
+      <div id="view-res" class="stack">
+        <div class="stats" id="stats"></div>
+        <div class="actions">
+          <select id="sort" aria-label="Ordenar grupos">
+            <option value="nota">Maior nota primeiro</option>
+            <option value="nome">Ordem do grupo</option>
+          </select>
+          <button type="button" class="btn ghost" id="dl-all">Baixar respostas (CSV)</button>
+          <button type="button" class="btn ghost" id="dl-med">Baixar médias (CSV)</button>
+        </div>
+        <div id="groups" class="stack" style="gap:12px"></div>
+      </div>
+
+      <div id="view-alunos" class="stack" hidden>
+        <section class="card">
+          <h2>Cadastrar alunos</h2>
+          <p class="hint">Cole um nome por linha. Cada aluno recebe um código de 6 caracteres. Nomes já cadastrados são ignorados.</p>
+          <textarea id="f-nomes" rows="6" placeholder="Maria da Silva&#10;João Pereira&#10;..."></textarea>
+          <button type="button" class="btn" id="btn-gerar">Gerar códigos</button>
+          <p class="msg" id="msg-alunos" role="status" aria-live="polite"></p>
+        </section>
+        <div class="actions">
+          <button type="button" class="btn ghost" id="dl-codigos">Baixar códigos (CSV)</button>
+          <button type="button" class="btn ghost" id="btn-imprimir">Imprimir cartões</button>
+        </div>
+        <section class="card">
+          <h2>Turma cadastrada</h2>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Aluno</th><th>Código</th><th>Avaliações enviadas</th></tr></thead>
+            <tbody id="tb-alunos"></tbody>
+          </table></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="cartoes" aria-hidden="true"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, setDoc, collection, getDocs, collectionGroup, onSnapshot, serverTimestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const CRIT = [
+  { id: "dominio", t: "Domínio do conteúdo", d: "O grupo entende o tema e explica com segurança." },
+  { id: "clareza", t: "Clareza e organização", d: "Tem início, meio e fim e é fácil de acompanhar." },
+  { id: "participacao", t: "Participação de todos", d: "Todos os integrantes falam e contribuem." },
+  { id: "visuais", t: "Recursos visuais", d: "Slides ou materiais legíveis e que ajudam a entender." },
+  { id: "oral", t: "Comunicação oral", d: "Voz audível, boa dicção, contato visual, sem ler o texto." },
+  { id: "tempo", t: "Uso do tempo", d: "Respeitou o tempo combinado, sem pressa nem sobra." },
+  { id: "criatividade", t: "Criatividade e engajamento", d: "Prende a atenção da turma e traz algo original." }
+];
+const MAXTOTAL = CRIT.length * 5;
+const nf = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem I, O, 0 e 1 para não confundir
+const S = { code: null, nome: "", enviadas: {}, pending: null, busy: false, user: null, alunos: [], aval: [], avalState: "idle", unsub: null };
+
+const $ = (id) => document.getElementById(id);
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v]) => {
+    if (k === "class") e.className = v;
+    else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, "");
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  });
+  kids.flat().forEach((kid) => { if (kid != null && kid !== false) e.append(kid.nodeType ? kid : document.createTextNode(kid)); });
+  return e;
+}
+const nota10 = (total) => total / (MAXTOTAL / 10);
+function groupKey(raw) {
+  const s = String(raw).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+  const m = s.match(/^(?:grupo|equipe|time|g)\s*[-#.]*\s*(?:n[oº°]?\s*)?0*(\d+)$/) || s.match(/^0*(\d+)$/);
+  if (m) return m[1];
+  return (s.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "sem-nome").slice(0, 70);
+}
+function normCode(v) { return String(v).toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+function setMsg(id, text, kind) { const m = $(id); m.textContent = text || ""; m.className = "msg" + (kind ? " " + kind : ""); }
+
+/* ---------- Firebase ---------- */
+const configurado = firebaseConfig && typeof firebaseConfig.apiKey === "string" && !firebaseConfig.apiKey.startsWith("COLE");
+let db = null, auth = null;
+if (configurado) {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+}
+
+/* ---------- Telas ---------- */
+function mostrar(tela) {
+  $("tela-entrar").hidden = tela !== "entrar";
+  $("tela-aluno").hidden = tela !== "aluno";
+  $("tela-prof").hidden = tela !== "prof";
+  window.scrollTo(0, 0);
+}
+function erroConfig() {
+  const b = $("banner");
+  b.hidden = false;
+  b.textContent = "O site ainda não está ligado ao Firebase. Preencha o arquivo firebase-config.js (veja o LEIA-ME).";
+  $("btn-entrar").disabled = true;
+}
+
+/* ---------- Ficha do aluno ---------- */
+function buildCriteria() {
+  const host = $("crit");
+  CRIT.forEach((c) => {
+    const scale = el("div", { class: "scale", role: "radiogroup", "aria-label": c.t });
+    for (let n = 1; n <= 5; n++) {
+      scale.append(el("label", { class: "pt" },
+        el("input", { type: "radio", name: "c-" + c.id, value: String(n), id: "c-" + c.id + "-" + n, "aria-label": c.t + ": " + n, onchange: updateSum }),
+        el("span", { text: String(n) })));
+    }
+    host.append(el("div", { class: "crit" }, el("div", { class: "name", text: c.t }), el("div", { class: "desc", text: c.d }), scale));
+  });
+}
+function readScores() {
+  const notas = {}; let completo = true;
+  CRIT.forEach((c) => {
+    const r = document.querySelector('input[name="c-' + c.id + '"]:checked');
+    if (r) notas[c.id] = Number(r.value); else completo = false;
+  });
+  return { notas, completo };
+}
+const sumOf = (notas) => Object.values(notas).reduce((a, b) => a + b, 0);
+function updateSum() {
+  const r = readScores(), t = sumOf(r.notas);
+  $("sum").textContent = String(t);
+  $("nota").textContent = r.completo ? nf.format(nota10(t)) : "–";
+  cancelarConfirmacao();
+}
+function resetForm() {
+  document.querySelectorAll("#crit input[type=radio]").forEach((i) => { i.checked = false; });
+  ["f-grupo", "f-forte", "f-melhorar", "f-pergunta"].forEach((id) => { $(id).value = ""; });
+  updateSum();
+}
+function renderMine() {
+  const items = Object.values(S.enviadas).sort((a, b) => (b.ms || 0) - (a.ms || 0));
+  $("mine").hidden = items.length === 0;
+  const ul = $("minelist"); ul.textContent = "";
+  items.forEach((ev) => ul.append(el("li", {}, el("span", { class: "g", text: ev.grupo }), el("span", { class: "sc", text: "nota " + nf.format(nota10(ev.total || 0)) }))));
+}
+async function carregarEnviadas() {
+  const snap = await getDocs(collection(db, "alunos", S.code, "avaliacoes"));
+  S.enviadas = {};
+  snap.forEach((d) => { const v = d.data(); S.enviadas[d.id] = { grupo: v.grupo, total: v.total, ms: v.em && v.em.toMillis ? v.em.toMillis() : 0 }; });
+  renderMine();
+}
+async function entrar(ev) {
+  ev.preventDefault();
+  if (!configurado) return;
+  const code = normCode($("f-codigo").value);
+  if (code.length < 4) { setMsg("msg-entrar", "Digite o código completo.", "err"); return; }
+  $("btn-entrar").disabled = true; setMsg("msg-entrar", "Conferindo…");
+  try {
+    const snap = await getDoc(doc(db, "alunos", code));
+    if (!snap.exists()) { setMsg("msg-entrar", "Código não encontrado. Confira com o professor.", "err"); return; }
+    S.code = code; S.nome = snap.data().nome || "";
+    try { localStorage.setItem("aval-codigo", code); } catch (e) {}
+    await abrirAluno();
+  } catch (e) {
+    setMsg("msg-entrar", "Não foi possível conectar. Confira a internet e tente de novo.", "err");
+  } finally { $("btn-entrar").disabled = false; }
+}
+async function abrirAluno() {
+  $("aluno-nome").textContent = S.nome;
+  setMsg("msg", "");
+  mostrar("aluno");
+  try { await carregarEnviadas(); } catch (e) { renderMine(); }
+}
+function sairAluno() {
+  S.code = null; S.nome = ""; S.enviadas = {};
+  try { localStorage.removeItem("aval-codigo"); } catch (e) {}
+  $("f-codigo").value = ""; setMsg("msg-entrar", "");
+  resetForm(); mostrar("entrar");
+}
+function cancelarConfirmacao() { S.pending = null; $("confirm").hidden = true; $("send").hidden = false; }
+async function pedirConfirmacao(ev) {
+  ev.preventDefault();
+  if (S.busy) return;
+  setMsg("msg", "");
+  const grupo = $("f-grupo").value.trim().replace(/\s+/g, " "), r = readScores();
+  if (!grupo) { setMsg("msg", "Escreva o grupo que você está avaliando.", "err"); $("f-grupo").focus(); return; }
+  if (!r.completo) {
+    const falta = CRIT.find((c) => !r.notas[c.id]);
+    setMsg("msg", "Falta dar nota em: " + falta.t + ".", "err");
+    const first = $("c-" + falta.id + "-1"); if (first) first.closest(".crit").scrollIntoView({ block: "center", behavior: "smooth" });
+    return;
+  }
+  const key = groupKey(grupo);
+  $("send").disabled = true;
+  try {
+    const ja = await getDoc(doc(db, "alunos", S.code, "avaliacoes", key));
+    if (ja.exists()) { setMsg("msg", "Você já avaliou o grupo “" + (ja.data().grupo || grupo) + "”. Cada grupo só pode ser avaliado uma vez.", "err"); return; }
+  } catch (e) { /* se a checagem falhar, a regra do servidor ainda barra a duplicata */ }
+  finally { $("send").disabled = false; }
+  const total = sumOf(r.notas);
+  S.pending = { key, grupo, notas: r.notas, total };
+  $("confirm-text").textContent = "Enviar a avaliação de “" + grupo + "” com nota " + nf.format(nota10(total)) + "? Depois de enviada, ela não pode ser alterada.";
+  $("confirm").hidden = false; $("send").hidden = true;
+  $("confirm").scrollIntoView({ block: "center", behavior: "smooth" });
+}
+async function enviar() {
+  const p = S.pending; if (!p || S.busy) return;
+  S.busy = true; $("confirm-ok").disabled = true; setMsg("msg", "Enviando…");
+  const dados = {
+    codigo: S.code, nome: S.nome, grupo: p.grupo, notas: p.notas, total: p.total,
+    comentarios: { forte: $("f-forte").value.trim(), melhorar: $("f-melhorar").value.trim(), pergunta: $("f-pergunta").value.trim() },
+    em: serverTimestamp()
+  };
+  try {
+    await setDoc(doc(db, "alunos", S.code, "avaliacoes", p.key), dados);
+    S.enviadas[p.key] = { grupo: p.grupo, total: p.total, ms: Date.now() };
+    renderMine();
+    const nome = p.grupo, nt = nota10(p.total);
+    resetForm();
+    setMsg("msg", "Avaliação de “" + nome + "” enviada. Nota " + nf.format(nt) + ". Pode avaliar o próximo grupo.", "ok");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (e) {
+    let ja = false;
+    try { ja = (await getDoc(doc(db, "alunos", S.code, "avaliacoes", p.key))).exists(); } catch (e2) {}
+    setMsg("msg", ja ? "Você já avaliou este grupo. Cada grupo só pode ser avaliado uma vez." :
+      (e && e.code === "permission-denied" ? "O envio foi recusado. Confira o código e tente de novo." : "Não foi possível enviar agora. Confira a internet e toque em Enviar de novo."), "err");
+    cancelarConfirmacao();
+  } finally { S.busy = false; $("confirm-ok").disabled = false; }
+}
+
+/* ---------- Professor ---------- */
+function abrirProf() {
+  mostrar("prof");
+  if (!configurado) { erroConfig(); return; }
+  atualizarProf();
+}
+function atualizarProf() {
+  const u = auth && auth.currentUser;
+  $("prof-email").textContent = u ? u.email : "";
+  $("prof-login").hidden = !!u;
+  $("prof-conteudo").hidden = !u;
+  $("btn-sair-prof").hidden = !u;
+  if (u) carregarProf();
+}
+async function loginGoogle() {
+  setMsg("msg-login", "");
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { setMsg("msg-login", e && e.code === "auth/popup-closed-by-user" ? "" : "Não foi possível entrar. Confira se o domínio do site está autorizado no Firebase.", "err"); }
+}
+async function carregarProf() {
+  if (S.unsub || S.carregando) return;
+  S.carregando = true;
+  try {
+    await carregarAlunos();
+  } catch (e) { S.carregando = false; negarProf(e); return; }
+  S.carregando = false;
+  S.avalState = "loading"; renderResultados();
+  S.unsub = onSnapshot(collectionGroup(db, "avaliacoes"), (snap) => {
+    S.aval = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+    S.avalState = "ready"; renderResultados(); renderAlunos();
+  }, (e) => { S.avalState = "erro"; negarProf(e); });
+}
+function negarProf(e) {
+  if (S.unsub) { S.unsub(); S.unsub = null; }
+  const negado = e && e.code === "permission-denied";
+  $("prof-conteudo").hidden = true; $("prof-login").hidden = false;
+  setMsg("msg-login", negado ? "Este e-mail não tem acesso de professor. Confira o e-mail em firestore.rules." : "Não foi possível carregar os dados. Tente de novo.", "err");
+  if (negado && auth) signOut(auth);
+}
+async function carregarAlunos() {
+  const snap = await getDocs(collection(db, "alunos"));
+  S.alunos = snap.docs.map((d) => ({ id: d.id, nome: (d.data().nome || "") }));
+  S.alunos.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  renderAlunos(); renderResultados(); montarCartoes();
+}
+function aggregate() {
+  const map = {};
+  S.aval.forEach((d) => {
+    const g = map[d.id] || (map[d.id] = { key: d.id, label: d.grupo || d.id, n: 0, tot: 0, sums: {}, evs: [] });
+    g.n++; g.tot += d.total || 0;
+    CRIT.forEach((c) => { g.sums[c.id] = (g.sums[c.id] || 0) + ((d.notas && d.notas[c.id]) || 0); });
+    g.evs.push(d);
+  });
+  return Object.values(map).map((g) => {
+    g.nota = nota10(g.tot / g.n); g.avg = {};
+    CRIT.forEach((c) => { g.avg[c.id] = g.sums[c.id] / g.n; });
+    return g;
+  });
+}
+function sortedGroups() {
+  const gs = aggregate();
+  if ($("sort").value === "nome") gs.sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { numeric: true }));
+  else gs.sort((a, b) => b.nota - a.nota);
+  return gs;
+}
+function renderResultados() {
+  const gs = sortedGroups(), host = $("groups"), stats = $("stats");
+  host.textContent = ""; stats.textContent = "";
+  const quem = new Set(S.aval.map((d) => d.codigo)).size;
+  [[quem + " de " + S.alunos.length, "alunos já avaliaram"], [String(gs.length), "grupos avaliados"], [String(S.aval.length), "avaliações no total"]]
+    .forEach((p) => stats.append(el("div", { class: "stat" }, el("b", { text: p[0] }), el("span", { text: p[1] }))));
+  if (S.avalState === "loading") { host.append(el("p", { class: "empty", text: "Carregando avaliações…" })); return; }
+  if (!gs.length) { host.append(el("p", { class: "empty", text: "Nenhuma avaliação recebida ainda. Elas aparecem aqui assim que os alunos enviarem." })); return; }
+  gs.forEach((g) => {
+    const bars = el("div", { class: "bars" });
+    CRIT.forEach((c) => bars.append(el("div", { class: "bar" },
+      el("span", { text: c.t }),
+      el("div", { class: "track" }, el("div", { class: "fill", style: "width:" + (g.avg[c.id] / 5 * 100).toFixed(1) + "%" })),
+      el("span", { class: "v", text: nf.format(g.avg[c.id]) }))));
+    const cms = el("details", {}, el("summary", { text: "Ver comentários e quem avaliou" }));
+    g.evs.slice().sort((a, b) => (a.nome || "").localeCompare(b.nome || "", "pt-BR")).forEach((x) => {
+      const c = x.comentarios || {};
+      const box = el("div", { class: "cm" }, el("span", { class: "by", text: (x.nome || "(sem nome)") + " · nota " + nf.format(nota10(x.total || 0)) }));
+      [["Melhor", c.forte], ["Melhorar", c.melhorar], ["Pergunta", c.pergunta]].forEach((p) => { if (p[1]) box.append(el("span", { class: "k", text: p[0] }), el("span", { text: p[1] })); });
+      cms.append(box);
+    });
+    host.append(el("section", { class: "card group" },
+      el("div", { class: "ghead" }, el("h2", { text: g.label }), el("span", { class: "nota", text: nf.format(g.nota) })),
+      el("p", { class: "gmeta", text: g.n + (g.n === 1 ? " avaliação" : " avaliações") + " · média de 0 a 10" }),
+      bars, cms));
+  });
+}
+function renderAlunos() {
+  const tb = $("tb-alunos"); tb.textContent = "";
+  const cont = {};
+  S.aval.forEach((d) => { cont[d.codigo] = (cont[d.codigo] || 0) + 1; });
+  S.alunos.forEach((a) => {
+    const n = cont[a.id] || 0;
+    tb.append(el("tr", {}, el("td", { text: a.nome }), el("td", { class: "code", text: a.id }), el("td", { class: n === 0 ? "zero" : "", text: String(n) })));
+  });
+  if (!S.alunos.length) tb.append(el("tr", {}, el("td", { colspan: "3", text: "Nenhum aluno cadastrado ainda." })));
+}
+function montarCartoes() {
+  const host = $("cartoes"); host.textContent = "";
+  const url = location.origin + location.pathname;
+  S.alunos.forEach((a) => host.append(el("div", { class: "ct" }, el("div", { class: "n", text: a.nome }), el("div", { class: "c", text: a.id }), el("div", { class: "u", text: "Avalie em: " + url }))));
+}
+function novoCodigo(usados) {
+  for (;;) {
+    const bytes = new Uint8Array(6); crypto.getRandomValues(bytes);
+    const c = Array.from(bytes, (b) => ALFABETO[b % ALFABETO.length]).join("");
+    if (!usados.has(c)) { usados.add(c); return c; }
+  }
+}
+async function gerarCodigos() {
+  const linhas = $("f-nomes").value.split("\n").map((s) => s.trim().replace(/\s+/g, " ")).filter(Boolean);
+  if (!linhas.length) { setMsg("msg-alunos", "Cole pelo menos um nome.", "err"); return; }
+  const chave = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const jaTem = new Set(S.alunos.map((a) => chave(a.nome)));
+  const usados = new Set(S.alunos.map((a) => a.id));
+  const novos = []; let repetidos = 0;
+  linhas.forEach((n) => { const k = chave(n); if (jaTem.has(k)) { repetidos++; return; } jaTem.add(k); novos.push({ nome: n, id: novoCodigo(usados) }); });
+  if (!novos.length) { setMsg("msg-alunos", "Todos esses nomes já estão cadastrados.", "err"); return; }
+  $("btn-gerar").disabled = true; setMsg("msg-alunos", "Salvando…");
+  try {
+    for (let i = 0; i < novos.length; i += 400) {
+      const batch = writeBatch(db);
+      novos.slice(i, i + 400).forEach((a) => batch.set(doc(db, "alunos", a.id), { nome: a.nome, criadoEm: serverTimestamp() }));
+      await batch.commit();
+    }
+    $("f-nomes").value = "";
+    await carregarAlunos();
+    setMsg("msg-alunos", novos.length + " aluno(s) cadastrado(s)." + (repetidos ? " " + repetidos + " nome(s) já existia(m) e foi(ram) ignorado(s)." : ""), "ok");
+  } catch (e) {
+    setMsg("msg-alunos", "Não foi possível salvar. Confira se você entrou com o e-mail do professor.", "err");
+  } finally { $("btn-gerar").disabled = false; }
+}
+
+/* ---------- CSV ---------- */
+const csvCell = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+function baixarCSV(nome, linhas) {
+  const texto = "﻿" + linhas.map((r) => r.map(csvCell).join(";")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([texto], { type: "text/csv;charset=utf-8" }));
+  const a = el("a", { href: url, download: nome });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function csvRespostas() {
+  const cab = ["Avaliador", "Código", "Grupo", ...CRIT.map((c) => c.t), "Total (máx. 35)", "Nota (0 a 10)", "Melhor", "Melhorar", "Pergunta", "Enviado em"];
+  const linhas = S.aval.map((e) => {
+    const c = e.comentarios || {};
+    const quando = e.em && e.em.toDate ? e.em.toDate().toLocaleString("pt-BR") : "";
+    return [e.nome || "", e.codigo || "", e.grupo || e.id, ...CRIT.map((x) => (e.notas && e.notas[x.id]) || ""), e.total || 0, nf.format(nota10(e.total || 0)), c.forte || "", c.melhorar || "", c.pergunta || "", quando];
+  }).sort((a, b) => String(a[2]).localeCompare(String(b[2]), "pt-BR", { numeric: true }) || String(a[0]).localeCompare(String(b[0]), "pt-BR"));
+  baixarCSV("avaliacoes-respostas.csv", [cab, ...linhas]);
+}
+function csvMedias() {
+  const cab = ["Grupo", "Avaliações", ...CRIT.map((c) => c.t + " (média 1 a 5)"), "Nota média (0 a 10)"];
+  baixarCSV("avaliacoes-medias-por-grupo.csv", [cab, ...sortedGroups().map((g) => [g.label, g.n, ...CRIT.map((c) => nf.format(g.avg[c.id])), nf.format(g.nota)])]);
+}
+function csvCodigos() {
+  baixarCSV("codigos-dos-alunos.csv", [["Aluno", "Código"], ...S.alunos.map((a) => [a.nome, a.id])]);
+}
+
+/* ---------- Início ---------- */
+function abaProf(nome) {
+  const res = nome === "res";
+  $("view-res").hidden = !res; $("view-alunos").hidden = res;
+  $("tab-res").setAttribute("aria-pressed", String(res));
+  $("tab-alunos").setAttribute("aria-pressed", String(!res));
+}
+buildCriteria(); updateSum();
+$("form-entrar").addEventListener("submit", entrar);
+$("btn-sair-aluno").addEventListener("click", sairAluno);
+$("form").addEventListener("submit", pedirConfirmacao);
+$("confirm-ok").addEventListener("click", enviar);
+$("confirm-back").addEventListener("click", cancelarConfirmacao);
+$("f-grupo").addEventListener("input", cancelarConfirmacao);
+$("link-prof").addEventListener("click", abrirProf);
+$("btn-voltar-aluno").addEventListener("click", () => mostrar(S.code ? "aluno" : "entrar"));
+$("btn-google").addEventListener("click", loginGoogle);
+$("btn-sair-prof").addEventListener("click", async () => { if (S.unsub) { S.unsub(); S.unsub = null; } S.aval = []; S.alunos = []; await signOut(auth); mostrar(S.code ? "aluno" : "entrar"); });
+$("tab-res").addEventListener("click", () => abaProf("res"));
+$("tab-alunos").addEventListener("click", () => abaProf("alunos"));
+$("sort").addEventListener("change", renderResultados);
+$("dl-all").addEventListener("click", csvRespostas);
+$("dl-med").addEventListener("click", csvMedias);
+$("dl-codigos").addEventListener("click", csvCodigos);
+$("btn-gerar").addEventListener("click", gerarCodigos);
+$("btn-imprimir").addEventListener("click", () => { montarCartoes(); window.print(); });
+
+if (!configurado) {
+  mostrar("entrar"); erroConfig();
+} else {
+  onAuthStateChanged(auth, () => { if (!$("tela-prof").hidden) atualizarProf(); });
+  mostrar("entrar");
+  let salvo = null;
+  try { salvo = localStorage.getItem("aval-codigo"); } catch (e) {}
+  if (salvo) {
+    getDoc(doc(db, "alunos", salvo)).then((snap) => {
+      if (snap.exists()) { S.code = salvo; S.nome = snap.data().nome || ""; abrirAluno(); }
+    }).catch(() => {});
+  }
+}
+</script>
+</body>
+</html>
