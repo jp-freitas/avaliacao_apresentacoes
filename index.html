@@ -132,10 +132,14 @@ td.zero { color: var(--bad); font-weight: 700; }
   body { background: #fff; color: #000; padding: 0; }
   .wrap { display: none !important; }
   #cartoes { display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 0; }
-  #cartoes .ct { border: 1px dashed #000; padding: 16px 18px; break-inside: avoid; font-family: var(--font-body); color: #000; }
-  #cartoes .ct .n { font-weight: 700; font-size: 14pt; }
-  #cartoes .ct .c { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; font-size: 24pt; letter-spacing: 0.18em; margin: 6px 0; }
-  #cartoes .ct .u { font-size: 9pt; overflow-wrap: anywhere; }
+  #cartoes .ct { border: 1px dashed #000; padding: 14px 16px; break-inside: avoid; font-family: var(--font-body); color: #000; background: #fff; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  #cartoes .ct .tx { min-width: 0; flex: 1; }
+  #cartoes .ct .n { font-weight: 700; font-size: 13pt; overflow-wrap: anywhere; }
+  #cartoes .ct .l { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 8px; }
+  #cartoes .ct .c { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; font-size: 22pt; letter-spacing: 0.16em; }
+  #cartoes .ct .u { font-size: 8pt; overflow-wrap: anywhere; margin-top: 6px; }
+  #cartoes .ct .qr { flex: none; width: 30mm; text-align: center; font-size: 7pt; }
+  #cartoes .ct .qr svg { display: block; width: 30mm; height: 30mm; background: #fff; }
 }
 </style>
 </head>
@@ -276,6 +280,7 @@ td.zero { color: var(--bad); font-weight: 700; }
 
 <div id="cartoes" aria-hidden="true"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
@@ -570,10 +575,39 @@ function renderAlunos() {
   });
   if (!S.alunos.length) tb.append(el("tr", {}, el("td", { colspan: "3", text: "Nenhum aluno cadastrado ainda." })));
 }
+function qrSvg(texto) {
+  if (typeof window.qrcode !== "function") return null;
+  const qr = window.qrcode(0, "M");
+  qr.addData(texto); qr.make();
+  const n = qr.getModuleCount(), q = 2; // 2 módulos de margem branca (zona de silêncio)
+  let d = "";
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += "M" + (c + q) + " " + (r + q) + "h1v1h-1z";
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 " + (n + 2 * q) + " " + (n + 2 * q));
+  svg.setAttribute("shape-rendering", "crispEdges");
+  svg.setAttribute("aria-label", "QR code do site");
+  const fundo = document.createElementNS(NS, "rect");
+  fundo.setAttribute("width", String(n + 2 * q)); fundo.setAttribute("height", String(n + 2 * q)); fundo.setAttribute("fill", "#fff");
+  const path = document.createElementNS(NS, "path");
+  path.setAttribute("d", d); path.setAttribute("fill", "#000");
+  svg.append(fundo, path);
+  return svg;
+}
 function montarCartoes() {
   const host = $("cartoes"); host.textContent = "";
-  const url = location.origin + location.pathname;
-  S.alunos.forEach((a) => host.append(el("div", { class: "ct" }, el("div", { class: "n", text: a.nome }), el("div", { class: "c", text: a.id }), el("div", { class: "u", text: "Avalie em: " + url }))));
+  const url = (location.origin + location.pathname).replace(/index\.html$/, "");
+  S.alunos.forEach((a) => {
+    let svg = null;
+    try { svg = qrSvg(url); } catch (e) { svg = null; }
+    host.append(el("div", { class: "ct" },
+      el("div", { class: "tx" },
+        el("div", { class: "n", text: a.nome }),
+        el("div", { class: "l", text: "Seu código" }),
+        el("div", { class: "c", text: a.id }),
+        svg ? null : el("div", { class: "u", text: "Avalie em: " + url })),
+      svg ? el("div", { class: "qr" }, svg, el("div", { text: "Aponte a câmera para abrir o site" })) : null));
+  });
 }
 function novoCodigo(usados) {
   for (;;) {
