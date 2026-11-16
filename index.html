@@ -141,6 +141,8 @@ td.zero { color: var(--bad); font-weight: 700; }
   #cartoes .ct .qr { flex: none; width: 30mm; text-align: center; font-size: 7pt; }
   #cartoes .ct .qr svg { display: block; width: 30mm; height: 30mm; background: #fff; }
 }
+.link-exercicios { align-self: flex-start; text-decoration: none; display: inline-flex; align-items: center; margin-top: 4px; }
+a.linklike { display: inline-flex; align-items: center; }
 </style>
 </head>
 <body>
@@ -148,6 +150,8 @@ td.zero { color: var(--bad); font-weight: 700; }
   <header class="top">
     <p class="eyebrow">Apresentações dos grupos</p>
     <h1>Avaliação de apresentações</h1>
+    <!-- Troque COLE_O_ID pelo ID do exercício (botão "Copiar link" no painel) -->
+    <a class="btn ghost link-exercicios" href="exercicios/?ex=COLE_O_ID">Ir para o exercício →</a>
   </header>
 
   <div id="banner" class="banner warn" hidden></div>
@@ -223,6 +227,7 @@ td.zero { color: var(--bad); font-weight: 700; }
     <div class="who">
       <span>Área do professor <b id="prof-email"></b></span>
       <span class="actions">
+        <a class="linklike" href="exercicios/professor.html">Painel de exercícios</a>
         <button type="button" class="linklike" id="btn-sair-prof">Sair</button>
         <button type="button" class="linklike" id="btn-voltar-aluno">Voltar à ficha</button>
       </span>
