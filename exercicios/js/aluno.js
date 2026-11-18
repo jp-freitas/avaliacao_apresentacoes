@@ -140,7 +140,7 @@ function htmlStatus() {
     ${aberto() ? " Você pode reenviar enquanto o exercício estiver aberto — vale a última entrega." : ""}</div>`;
   if (anterior.nota !== undefined && anterior.nota !== null) {
     h += `<div class="nota-box"><div>Nota: <strong>${esc(anterior.nota)}</strong></div>
-      ${anterior.comentario ? `<div class="texto">${esc(anterior.comentario)}</div>` : ""}</div>`;
+      ${anterior.comentario ? `<div class="feedback-titulo">Feedback do professor</div><div class="texto">${esc(anterior.comentario)}</div>` : ""}</div>`;
   }
   return h;
 }

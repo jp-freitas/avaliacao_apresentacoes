@@ -186,3 +186,30 @@ dialog.modal::backdrop { background: rgba(15, 23, 42, .45); }
 .login-codigo input { font: 600 1.5rem var(--mono); letter-spacing: .2em; text-transform: uppercase; text-align: center; max-width: 260px; margin: .8rem auto; display: block; }
 .pendentes { display: flex; flex-wrap: wrap; gap: .4rem; }
 .pendentes span { background: var(--neutro-bg); border-radius: 99px; padding: .2rem .7rem; font-size: .88rem; }
+
+/* Tipo do exercício */
+.opcoes-area { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+@media (max-width: 640px) { .opcoes-area { grid-template-columns: 1fr; } }
+.opcao-area {
+  flex-direction: column; align-items: flex-start; gap: .15rem; text-align: left;
+  background: #fff; border: 2px solid var(--borda); padding: .9rem 1rem; border-radius: var(--raio);
+}
+.opcao-area span { font-size: 1.4rem; }
+.opcao-area small { color: var(--suave); font-size: .85rem; }
+.opcao-area:hover { border-color: #c4c9d2; }
+.opcao-area[aria-pressed="true"] { border-color: var(--primaria); background: #eef6f5; }
+.resumo { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 760px) { .resumo { grid-template-columns: repeat(2, 1fr); } }
+
+/* Correção com IA */
+.barra-ia { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.barra-ia p { margin: .2rem 0 0; }
+#progresso-ia { flex-basis: 100%; }
+#progresso-ia:empty { display: none; }
+.ia-box { margin: .4rem 0 1rem; }
+.ia-linha { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.ia-coment { background: #f5f3ff; border: 1px solid #e4defc; border-radius: 8px; padding: .5rem .7rem; margin: .4rem 0 .6rem; font-size: .9rem; }
+.lista-liberar { max-height: 240px; overflow: auto; padding-left: 1.2rem; }
+.feedback-titulo { font-weight: 600; font-size: .85rem; color: var(--suave); margin-top: .5rem; }
+select { font: inherit; }
+.campo select { display: block; width: 100%; margin-top: .3rem; padding: .5rem; border: 1px solid var(--borda); border-radius: 8px; background: #fff; }
