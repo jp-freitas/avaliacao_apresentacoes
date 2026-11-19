@@ -4,7 +4,7 @@ import {
   prepararEditor, criarBanco, executarConsulta, estruturaBanco, htmlResultado, htmlEstrutura,
   compararResultados, ABAS, NOME_ABA, MODOS, MODELOS_WEB, webPadrao, codigoCompleto, renderPreview,
 } from "./common.js";
-import { configIA, abrirConfigIA, garantirIA, corrigirComIA } from "./ia.js";
+import { configIA, abrirConfigIA, garantirIA, corrigirComIA, ErroLimite } from "./ia.js";
 import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc, writeBatch, query, orderBy,
   serverTimestamp, getCountFromServer,
@@ -576,8 +576,8 @@ async function dadosParaIA(c, r) {
 }
 
 // Corrige uma entrega com IA e salva como rascunho (o aluno não vê)
-async function corrigirEntregaIA(c, r) {
-  const res = await corrigirComIA(await dadosParaIA(c, r));
+async function corrigirEntregaIA(c, r, aoEsperar) {
+  const res = await corrigirComIA(await dadosParaIA(c, r), { aoEsperar });
   const cor = {
     nota: res.nota, feedback: res.feedback, questoes: res.questoes, modelo: res.modelo,
     origem: "ia", liberada: false, envioAvaliado: ms(r.enviadoEm), geradoEm: serverTimestamp(),
@@ -686,16 +686,23 @@ async function telaEntregas(id) {
     let feitos = 0;
     const falhas = [];
     for (const r of paraIA) {
-      prog.textContent = `Corrigindo ${feitos + 1} de ${paraIA.length}: ${r.nome || r.codigo}…`;
+      const rotulo = `Corrigindo ${feitos + 1} de ${paraIA.length}: ${r.nome || r.codigo}…`;
+      prog.textContent = rotulo;
       try {
-        await corrigirEntregaIA(c, r);
+        await corrigirEntregaIA(c, r, (seg) => {
+          prog.textContent = seg > 0 ? `${rotulo} Limite por minuto da IA atingido — continuando em ${seg}s (não feche a página).` : rotulo;
+        });
         const s = situacao(c, r);
         const el = document.getElementById(`sit-${r.codigo}`);
         if (el) el.innerHTML = badgeSituacao(s);
       } catch (e) {
         console.error(e);
         falhas.push(`${r.nome || r.codigo}: ${e.message}`);
-        if (/\b(401|403)\b/.test(e.message)) break; // chave inválida: não adianta continuar
+        // chave inválida ou limite esgotado por muito tempo: não adianta continuar
+        if (e instanceof ErroLimite || /\b(401|403)\b/.test(e.message)) {
+          if (e instanceof ErroLimite) falhas.push(`As outras ${paraIA.length - feitos - 1} entrega(s) ficaram para depois: clique em "Corrigir com IA" de novo mais tarde.`);
+          break;
+        }
       }
       feitos++;
     }
@@ -885,7 +892,9 @@ async function telaCorrecao(id, codigo) {
     const btn = $("btn-ia");
     btn.disabled = true; btn.textContent = "🤖 Corrigindo…";
     try {
-      await corrigirEntregaIA(c, r);
+      await corrigirEntregaIA(c, r, (seg) => {
+        btn.textContent = seg > 0 ? `🤖 Limite da IA atingido — tentando em ${seg}s…` : "🤖 Corrigindo…";
+      });
       toast("Sugestão da IA pronta. Revise e libere.");
       preencher(true);
     } catch (e) {

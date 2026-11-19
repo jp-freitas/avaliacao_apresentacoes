@@ -175,8 +175,33 @@ async function chamarGemini(cfg, { sistema, usuario }) {
     }),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(`Gemini respondeu ${r.status}: ${j.error?.message || "erro desconhecido"}`);
+  if (!r.ok) throw falha("Gemini", r, j);
   return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
+}
+
+// Erro de limite de uso (HTTP 429): guarda quanto tempo esperar antes de tentar de novo
+export class ErroLimite extends Error {
+  constructor(msg, esperaMs) { super(msg); this.esperaMs = esperaMs; }
+}
+
+// Lê "try again in 7.5s", "1m30s", "250ms" (mensagem) ou o cabeçalho retry-after
+function tempoDeEspera(r, msg) {
+  const m = /try again in\s*((?:\d+h)?(?:\d+m(?!s))?(?:[\d.]+(?:ms|s))?)/i.exec(msg || "");
+  if (m && m[1]) {
+    let total = 0;
+    for (const [, n, u] of m[1].matchAll(/([\d.]+)(h|ms|m|s)/g)) {
+      total += Number(n) * ({ h: 3600000, m: 60000, s: 1000, ms: 1 })[u];
+    }
+    if (total > 0) return total;
+  }
+  const ra = Number(r.headers.get("retry-after"));
+  return Number.isFinite(ra) && ra > 0 ? ra * 1000 : 10000;
+}
+
+function falha(nome, r, j) {
+  const msg = j.error?.message || j.error?.metadata?.raw || "erro desconhecido";
+  if (r.status === 429) return new ErroLimite(`${nome}: limite de uso atingido. ${msg}`, tempoDeEspera(r, msg));
+  return new Error(`${nome} respondeu ${r.status}: ${msg}`);
 }
 
 // Groq e OpenRouter usam o mesmo formato de API (compatível com o da OpenAI)
@@ -188,15 +213,17 @@ async function chamarCompativelOpenAI(cfg, { sistema, usuario }) {
   const corpo = {
     model: cfg.modelo || PROVEDORES[cfg.provedor].modelo,
     temperature: 0.2,
-    max_tokens: 4000,
+    max_tokens: 2500,
     messages: [{ role: "system", content: sistema }, { role: "user", content: usuario }],
   };
+  // Os modelos gpt-oss "pensam" antes de responder; pensar menos gasta menos do limite por minuto
+  if (groq && /gpt-oss/.test(corpo.model)) corpo.reasoning_effort = "low";
   // Na Groq, pede JSON garantido; no roteador gratuito da OpenRouter nem todo modelo aceita
   if (groq) corpo.response_format = { type: "json_object" };
   const r = await fetch(url, { method: "POST", headers, body: JSON.stringify(corpo) });
   const j = await r.json().catch(() => ({}));
   const nome = groq ? "Groq" : "OpenRouter";
-  if (!r.ok) throw new Error(`${nome} respondeu ${r.status}: ${j.error?.message || "erro desconhecido"}`);
+  if (!r.ok) throw falha(nome, r, j);
   const texto = j.choices?.[0]?.message?.content;
   if (!texto) throw new Error(`${nome} devolveu uma resposta vazia. Tente de novo.`);
   return texto;
@@ -220,7 +247,7 @@ async function chamarClaude(cfg, { sistema, usuario }) {
     }),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(`Claude respondeu ${r.status}: ${j.error?.message || "erro desconhecido"}`);
+  if (!r.ok) throw falha("Claude", r, j);
   return (j.content || []).map((p) => p.text || "").join("");
 }
 
@@ -230,13 +257,36 @@ function lerJson(texto) {
   return JSON.parse(texto.slice(ini, fim + 1));
 }
 
-export async function corrigirComIA(dados) {
+const ESPERA_MAXIMA = 120_000; // acima disso (ex.: limite diário), desiste e avisa
+const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// aoEsperar(segundos) é chamado enquanto o site aguarda o limite liberar
+export async function corrigirComIA(dados, { aoEsperar } = {}) {
   const cfg = configIA();
   if (!cfg) throw new Error("A IA não está configurada.");
   const pedido = montarPedido(dados);
-  const texto = cfg.provedor === "claude" ? await chamarClaude(cfg, pedido)
-    : cfg.provedor === "gemini" ? await chamarGemini(cfg, pedido)
-    : await chamarCompativelOpenAI(cfg, pedido);
+  const chamar = () => (cfg.provedor === "claude" ? chamarClaude(cfg, pedido)
+    : cfg.provedor === "gemini" ? chamarGemini(cfg, pedido)
+    : chamarCompativelOpenAI(cfg, pedido));
+  let texto;
+  for (let tentativa = 1; ; tentativa++) {
+    try {
+      texto = await chamar();
+      break;
+    } catch (e) {
+      if (!(e instanceof ErroLimite) || tentativa >= 6) throw e;
+      if (e.esperaMs > ESPERA_MAXIMA) {
+        const min = Math.ceil(e.esperaMs / 60000);
+        throw new ErroLimite(`Limite de uso da IA esgotado por enquanto (libera em cerca de ${min} min). ${e.message}`, e.esperaMs);
+      }
+      const ms = e.esperaMs + 1000;
+      for (let rest = ms; rest > 0; rest -= 1000) {
+        aoEsperar?.(Math.ceil(rest / 1000));
+        await dormir(Math.min(1000, rest));
+      }
+      aoEsperar?.(0);
+    }
+  }
   const j = lerJson(texto);
   let nota = Number(j.nota);
   if (!Number.isFinite(nota)) throw new Error("A IA não informou a nota.");
